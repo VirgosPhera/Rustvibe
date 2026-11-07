@@ -23,6 +23,7 @@ rust-audio-core/target/
 /sdcard/
 *.log
 *.png
+!docs/screenshots/*.png
 *.jpg
 *.m4a
 *.mp3

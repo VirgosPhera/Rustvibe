@@ -6,6 +6,24 @@ Pemutar musik mandiri Android (open-source & bebas iklan) yang menggabungkan mes
 
 ---
 
+## 📸 Tangkapan Layar Aplikasi / Screenshots
+
+### Mode Vertikal (Portrait)
+| Beranda & Floating Player | Pencarian & Progress Bar | Full Player & Lirik Sinkron |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/01_home_portrait.png" width="260" alt="Beranda"/> | <img src="docs/screenshots/02_search_progress.png" width="260" alt="Cari"/> | <img src="docs/screenshots/03_full_player_lyrics.png" width="260" alt="Player"/> |
+
+| Detail Playlist & Reorder | Modal Unduh 1 Playlist | Profil & Switcher Tema |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/04_playlist_detail.png" width="260" alt="Playlist Detail"/> | <img src="docs/screenshots/05_playlist_download_modal.png" width="260" alt="Unduh Playlist"/> | <img src="docs/screenshots/08_profile_settings.png" width="260" alt="Profil"/> |
+
+### Mode Horizontal (Landscape & Tablet Ergonomics)
+| Beranda Landscape (Navigation Rail 72dp) | Dual-Pane Player & Panggung Lirik |
+| :---: | :---: |
+| <img src="docs/screenshots/06_landscape_home.png" width="450" alt="Landscape Home"/> | <img src="docs/screenshots/07_landscape_player_stage.png" width="450" alt="Landscape Player"/> |
+
+---
+
 ## 🇮🇩 Bahasa Indonesia
 
 ### Kenapa RustVibe?
