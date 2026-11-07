@@ -1,0 +1,15 @@
+[package]
+name = "rust_audio_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+symphonia = { version = "0.5.4", default-features = false, features = ["aac", "mp3", "isomp4", "mkv", "pcm"] }
+thiserror = "1.0"
+parking_lot = "0.12"
+
+[dev-dependencies]
+tempfile = "3.8"

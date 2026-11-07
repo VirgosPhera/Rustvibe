@@ -1,0 +1,47 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Gradle & Build files
+.gradle/
+build/
+*/build/
+app/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+.kotlin/
+android/.kotlin/
+
+# Rust Target
+rust-audio-core/target/
+**/target/
+
+# Local cache & downloads
+/tmp/
+/sdcard/
+*.log
+*.png
+*.jpg
+*.m4a
+*.mp3
+*.lrc
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
+wal_test/
+download_yjca_real_audio.py
+
+# OS / Editor specific files
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+*.swp
+*.bak
+*~
