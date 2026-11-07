@@ -1,6 +1,8 @@
 package com.rustvibe.ui.screens
 
 import android.content.res.Configuration
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +39,7 @@ import com.rustvibe.ui.components.ExpressiveBottomNavigation
 import com.rustvibe.ui.components.ExpressiveFloatingPlayer
 import com.rustvibe.ui.components.ExpressiveIcons
 import com.rustvibe.ui.components.ExpressiveNavigationRail
+import com.rustvibe.ui.components.LocalFolderImportDialog
 import com.rustvibe.ui.components.NavTab
 import com.rustvibe.ui.components.PlaylistCoverCard
 import com.rustvibe.ui.theme.AppTheme
@@ -58,7 +61,17 @@ fun PlaylistHubScreen(
     val playlists by viewModel.playlists.collectAsState()
     val currentTrack by viewModel.currentTrack.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
+    val scannedFolder by viewModel.scannedLocalFolder.collectAsState()
+    val downloadProgress by viewModel.downloadProgress.collectAsState()
     val colors = AppTheme.colors
+
+    val openFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.scanLocalFolder(uri)
+        }
+    }
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -110,23 +123,47 @@ fun PlaylistHubScreen(
                             color = colors.textMain
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .clip(FullPillShape)
-                                .background(colors.primary)
-                                .clickable { viewModel.createPlaylist("Playlist Baru") }
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = ExpressiveIcons.Plus,
-                                    contentDescription = null,
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(text = "Buat Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Import Folder Button
+                            Box(
+                                modifier = Modifier
+                                    .clip(FullPillShape)
+                                    .background(colors.surfaceHigh)
+                                    .clickable { openFolderLauncher.launch(null) }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.FolderOpen,
+                                        contentDescription = null,
+                                        tint = colors.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "Import Folder", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                                }
+                            }
+
+                            // Buat Baru Button
+                            Box(
+                                modifier = Modifier
+                                    .clip(FullPillShape)
+                                    .background(colors.primary)
+                                    .clickable { viewModel.createPlaylist("Playlist Baru") }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.Plus,
+                                        contentDescription = null,
+                                        tint = PureWhite,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "Buat Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                }
                             }
                         }
                     }
@@ -187,36 +224,60 @@ fun PlaylistHubScreen(
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Header + "+ Buat Baru" Button 9999px
+                // Header + Buttons 9999px
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Koleksi Playlist",
+                        text = "Playlist",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = colors.textMain
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .clip(FullPillShape)
-                            .background(colors.primary)
-                            .clickable { viewModel.createPlaylist("Playlist Baru") }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = ExpressiveIcons.Plus,
-                                contentDescription = null,
-                                tint = PureWhite,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = "Buat Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Import Folder Button
+                        Box(
+                            modifier = Modifier
+                                .clip(FullPillShape)
+                                .background(colors.surfaceHigh)
+                                .clickable { openFolderLauncher.launch(null) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = ExpressiveIcons.FolderOpen,
+                                    contentDescription = null,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "Import", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                            }
+                        }
+
+                        // Buat Baru Button
+                        Box(
+                            modifier = Modifier
+                                .clip(FullPillShape)
+                                .background(colors.primary)
+                                .clickable { viewModel.createPlaylist("Playlist Baru") }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = ExpressiveIcons.Plus,
+                                    contentDescription = null,
+                                    tint = PureWhite,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                            }
                         }
                     }
                 }
@@ -311,6 +372,15 @@ fun PlaylistHubScreen(
                 )
             }
         }
+    }
+
+    // Modal Dialog: Local Folder Import
+    scannedFolder?.let { folder ->
+        LocalFolderImportDialog(
+            scannedFolder = folder,
+            onConfirm = { name -> viewModel.confirmImportLocalFolder(folder, name) },
+            onDismiss = { viewModel.dismissLocalFolderDialog() }
+        )
     }
 }
 

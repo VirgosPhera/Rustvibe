@@ -81,4 +81,5 @@ dependencies {
     // Standalone Native yt-dlp
     implementation("com.github.yausername:youtubedl-android:0.13.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 }

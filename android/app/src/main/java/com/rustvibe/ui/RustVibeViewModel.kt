@@ -1,6 +1,7 @@
 package com.rustvibe.ui
 
 import android.app.Application
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,8 +9,10 @@ import com.rustvibe.audio.EngineState
 import com.rustvibe.audio.LyricLine
 import com.rustvibe.audio.LyricsParser
 import com.rustvibe.audio.RustAudioEngineBridge
+import com.rustvibe.data.local.LocalMusicScanner
 import com.rustvibe.data.local.PlaylistEntity
 import com.rustvibe.data.local.RustVibeDatabase
+import com.rustvibe.data.local.ScannedFolderResult
 import com.rustvibe.data.local.TrackEntity
 import com.rustvibe.data.remote.DownloadedPackage
 import com.rustvibe.data.remote.DownloadProgressState
@@ -77,6 +80,11 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
 
     private val _downloadProgress = MutableStateFlow<DownloadProgressState?>(null)
     val downloadProgress: StateFlow<DownloadProgressState?> = _downloadProgress.asStateFlow()
+
+    // Local Folder Import State
+    private val _scannedLocalFolder = MutableStateFlow<ScannedFolderResult?>(null)
+    val scannedLocalFolder: StateFlow<ScannedFolderResult?> = _scannedLocalFolder.asStateFlow()
+    private var targetImportPlaylistId: String? = null
 
     // Theme State: Dark Theme vs Light Theme vs Dynamic System Accent (Android 15-16)
     private val _themeMode = MutableStateFlow(com.rustvibe.ui.theme.ThemeMode.DARK)
@@ -183,9 +191,89 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
         val item = list.removeAt(fromIndex)
         list.add(toIndex, item)
         viewModelScope.launch(Dispatchers.IO) {
-            list.forEachIndexed { index, track ->
-                playlistDao.updateTrackPosition(playlistId, track.id, index)
+            playlistDao.reorderTracks(playlistId, list.map { it.id })
+        }
+    }
+
+    fun reorderPlaylistTracks(playlistId: String, reorderedTrackIds: List<String>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistDao.reorderTracks(playlistId, reorderedTrackIds)
+        }
+    }
+
+    fun scanLocalFolder(treeUri: Uri, targetPlaylistId: String? = null) {
+        targetImportPlaylistId = targetPlaylistId
+        viewModelScope.launch(Dispatchers.IO) {
+            val res = LocalMusicScanner.scanFolder(getApplication(), treeUri)
+            if (res != null && res.tracks.isNotEmpty()) {
+                _scannedLocalFolder.value = res
+            } else {
+                Log.w("RustVibeVM", "No supported audio tracks found in selected folder: $treeUri")
             }
+        }
+    }
+
+    fun scanLocalDirectoryPath(path: String, targetPlaylistId: String? = null) {
+        targetImportPlaylistId = targetPlaylistId
+        viewModelScope.launch(Dispatchers.IO) {
+            val dir = File(path)
+            val res = LocalMusicScanner.scanDirectoryFile(getApplication(), dir)
+            if (res != null && res.tracks.isNotEmpty()) {
+                _scannedLocalFolder.value = res
+            } else {
+                Log.w("RustVibeVM", "No supported audio tracks found in directory: $path")
+            }
+        }
+    }
+
+    fun dismissLocalFolderDialog() {
+        _scannedLocalFolder.value = null
+        targetImportPlaylistId = null
+    }
+
+    fun confirmImportLocalFolder(scanned: ScannedFolderResult, chosenPlaylistName: String) {
+        val targetPlaylistId = targetImportPlaylistId ?: UUID.randomUUID().toString()
+        val finalName = if (chosenPlaylistName.isNotBlank()) chosenPlaylistName.trim() else scanned.folderName
+        _scannedLocalFolder.value = null
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _downloadProgress.value = DownloadProgressState(
+                isDownloading = true,
+                title = "Mengimpor Folder: $finalName",
+                progress = 0f,
+                percent = 0,
+                speedText = "Menyiapkan...",
+                statusText = "0/${scanned.tracks.size} lagu diimpor"
+            )
+
+            LocalMusicScanner.importTracksToPlaylist(
+                context = getApplication(),
+                tracks = scanned.tracks,
+                targetPlaylistId = targetPlaylistId,
+                targetPlaylistName = finalName,
+                playlistDao = playlistDao
+            ) { progress, status ->
+                _downloadProgress.value = DownloadProgressState(
+                    isDownloading = true,
+                    title = "Mengimpor Folder: $finalName",
+                    progress = progress,
+                    percent = (progress * 100).toInt(),
+                    speedText = status,
+                    statusText = "${(progress * scanned.tracks.size).toInt()}/${scanned.tracks.size} lagu"
+                )
+            }
+
+            _downloadProgress.value = DownloadProgressState(
+                isDownloading = false,
+                title = "Import Folder Berhasil!",
+                progress = 1f,
+                percent = 100,
+                speedText = "Selesai",
+                statusText = "${scanned.tracks.size} lagu lokal berhasil ditambahkan ke '$finalName'"
+            )
+            delay(2500)
+            _downloadProgress.value = null
+            targetImportPlaylistId = null
         }
     }
 
@@ -308,6 +396,16 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
             delay(400) // Debounce rapid keystrokes & paste events!
             _isSearching.value = true
             try {
+                if ((cleanQuery.startsWith("/") || cleanQuery.startsWith("file://")) && File(cleanQuery.removePrefix("file://")).isDirectory) {
+                    val dir = File(cleanQuery.removePrefix("file://"))
+                    val scanned = LocalMusicScanner.scanDirectoryFile(getApplication(), dir)
+                    if (scanned != null && scanned.tracks.isNotEmpty()) {
+                        _scannedLocalFolder.value = scanned
+                        _isSearching.value = false
+                        return@launch
+                    }
+                }
+
                 val isPlaylistUrl = cleanQuery.contains("list=") || cleanQuery.contains("/playlist") ||
                         (cleanQuery.startsWith("PL") && cleanQuery.length >= 10)
 

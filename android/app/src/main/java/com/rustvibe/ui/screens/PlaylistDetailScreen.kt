@@ -1,8 +1,11 @@
 package com.rustvibe.ui.screens
 
 import android.content.res.Configuration
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,14 +27,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.rustvibe.audio.EngineState
 import com.rustvibe.data.local.PlaylistEntity
@@ -41,6 +50,7 @@ import com.rustvibe.ui.components.ExpressiveBottomNavigation
 import com.rustvibe.ui.components.ExpressiveFloatingPlayer
 import com.rustvibe.ui.components.ExpressiveIcons
 import com.rustvibe.ui.components.ExpressiveNavigationRail
+import com.rustvibe.ui.components.LocalFolderImportDialog
 import com.rustvibe.ui.components.NavTab
 import com.rustvibe.ui.components.PlaylistCoverCard
 import com.rustvibe.ui.theme.AppTheme
@@ -64,7 +74,16 @@ fun PlaylistDetailScreen(
 ) {
     val currentTrack by viewModel.currentTrack.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
+    val scannedFolder by viewModel.scannedLocalFolder.collectAsState()
     val colors = AppTheme.colors
+
+    val openFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.scanLocalFolder(uri, targetPlaylistId = playlist.id)
+        }
+    }
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -156,25 +175,52 @@ fun PlaylistDetailScreen(
                             )
                         }
 
-                        // Add Track Button
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                                .clip(FullPillShape)
-                                .background(colors.primary)
-                                .clickable(onClick = onAddTrackClick),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = ExpressiveIcons.Plus,
-                                    contentDescription = null,
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(text = "Tambah Lagu", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                            // Add Track Button
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                                    .clip(FullPillShape)
+                                    .background(colors.primary)
+                                    .clickable(onClick = onAddTrackClick),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.Plus,
+                                        contentDescription = null,
+                                        tint = PureWhite,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "Cari", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                }
+                            }
+
+                            // Import Folder Button
+                            Box(
+                                modifier = Modifier
+                                    .weight(1.3f)
+                                    .height(44.dp)
+                                    .clip(FullPillShape)
+                                    .background(colors.surfaceHigh)
+                                    .clickable { openFolderLauncher.launch(null) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.FolderOpen,
+                                        contentDescription = null,
+                                        tint = colors.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "Import Folder", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                                }
                             }
                         }
                     }
@@ -416,23 +462,51 @@ fun PlaylistDetailScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(FullPillShape)
-                        .background(colors.primary)
-                        .clickable(onClick = onAddTrackClick)
-                        .padding(horizontal = 24.dp, vertical = 10.dp),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = ExpressiveIcons.Plus,
-                            contentDescription = null,
-                            tint = PureWhite,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Tambah Lagu", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                    // Import Folder Button
+                    Box(
+                        modifier = Modifier
+                            .clip(FullPillShape)
+                            .background(colors.surfaceHigh)
+                            .clickable { openFolderLauncher.launch(null) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = ExpressiveIcons.FolderOpen,
+                                contentDescription = null,
+                                tint = colors.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "Import Folder", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                        }
+                    }
+
+                    // Tambah Lagu Button
+                    Box(
+                        modifier = Modifier
+                            .clip(FullPillShape)
+                            .background(colors.primary)
+                            .clickable(onClick = onAddTrackClick)
+                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = ExpressiveIcons.Plus,
+                                contentDescription = null,
+                                tint = PureWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = "Tambah Lagu", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                        }
                     }
                 }
 
@@ -467,6 +541,15 @@ fun PlaylistDetailScreen(
             }
         }
     }
+
+    // Modal Dialog: Local Folder Import into this playlist
+    scannedFolder?.let { folder ->
+        LocalFolderImportDialog(
+            scannedFolder = folder,
+            onConfirm = { name -> viewModel.confirmImportLocalFolder(folder, name) },
+            onDismiss = { viewModel.dismissLocalFolderDialog() }
+        )
+    }
 }
 
 @Composable
@@ -480,13 +563,19 @@ private fun DetailTrackRow(
     onPlayClick: () -> Unit
 ) {
     val colors = AppTheme.colors
+    var offsetY by remember { mutableStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
+            .graphicsLayer {
+                translationY = offsetY.coerceIn(-30f, 30f)
+            }
+            .zIndex(if (isDragging) 10f else 0f)
             .clip(TrackCardShape)
-            .background(colors.surface)
+            .background(if (isDragging) colors.surfaceHigh else colors.surface)
             .clickable(onClick = onPlayClick)
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.CenterStart
@@ -544,7 +633,7 @@ private fun DetailTrackRow(
                 )
             }
 
-            // Interactive Reorder Controls: Up / Down arrow pills + Drag Indicator
+            // Interactive Reorder Controls: Up / Down arrow pills + Active Drag Gesture Handle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -583,14 +672,47 @@ private fun DetailTrackRow(
                         )
                     }
                 }
-                Icon(
-                    imageVector = ExpressiveIcons.Drag,
-                    contentDescription = "Urutan Lagu",
-                    tint = colors.textSub,
+
+                // Interactive Drag Handle with tactile vertical gesture detection
+                Box(
                     modifier = Modifier
-                        .size(22.dp)
-                        .padding(start = 2.dp)
-                )
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(if (isDragging) colors.primary else colors.surfaceHigh)
+                        .pointerInput(track.id) {
+                            detectVerticalDragGestures(
+                                onDragStart = { isDragging = true },
+                                onDragEnd = {
+                                    isDragging = false
+                                    offsetY = 0f
+                                },
+                                onDragCancel = {
+                                    isDragging = false
+                                    offsetY = 0f
+                                },
+                                onVerticalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    offsetY += dragAmount
+                                    val stepPx = 64.dp.toPx()
+                                    if (offsetY > stepPx && canMoveDown) {
+                                        onMoveDown()
+                                        offsetY -= stepPx
+                                    } else if (offsetY < -stepPx && canMoveUp) {
+                                        onMoveUp()
+                                        offsetY += stepPx
+                                    }
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = ExpressiveIcons.Drag,
+                        contentDescription = "Urutan Lagu",
+                        tint = if (isDragging) PureWhite else colors.textSub,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
