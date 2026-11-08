@@ -34,6 +34,9 @@ class RustAudioEngineBridge private constructor() {
     private val _positionMs = MutableStateFlow(0L)
     val positionMs: StateFlow<Long> = _positionMs.asStateFlow()
 
+    private val _currentDurationMs = MutableStateFlow(0L)
+    val currentDurationMs: StateFlow<Long> = _currentDurationMs.asStateFlow()
+
     private val _isUsingBackup = MutableStateFlow(false)
     val isUsingBackup: StateFlow<Boolean> = _isUsingBackup.asStateFlow()
 
@@ -107,11 +110,15 @@ class RustAudioEngineBridge private constructor() {
                     )
                     setDataSource(activeAudioFile!!.absolutePath)
                     prepare()
+                    val realDur = duration.toLong()
+                    if (realDur > 0L) {
+                        _currentDurationMs.value = realDur
+                    }
                     setOnCompletionListener {
                         triggerCompletion()
                     }
                 }
-                Log.d("RustAudioEngine", "MediaPlayer prepared successfully: ${activeAudioFile!!.absolutePath}")
+                Log.d("RustAudioEngine", "MediaPlayer prepared successfully (${_currentDurationMs.value}ms): ${activeAudioFile!!.absolutePath}")
             } catch (e: Exception) {
                 Log.e("RustAudioEngine", "MediaPlayer prep failed, falling back to backup", e)
                 if (backupExists && activeAudioFile != backupMp3File) {
@@ -174,6 +181,7 @@ class RustAudioEngineBridge private constructor() {
     fun stop() {
         _state.value = EngineState.IDLE
         _positionMs.value = 0L
+        _currentDurationMs.value = 0L
         try {
             mediaPlayer?.stop()
             mediaPlayer?.release()
@@ -185,8 +193,18 @@ class RustAudioEngineBridge private constructor() {
     }
 
     fun seekTo(targetMs: Long) {
-        _positionMs.value = targetMs
-        mediaPlayer?.seekTo(targetMs.toInt())
+        val maxDur = _currentDurationMs.value
+        val safeTarget = if (maxDur > 1000L) {
+            targetMs.coerceIn(0L, (maxDur - 500L).coerceAtLeast(0L))
+        } else {
+            targetMs.coerceAtLeast(0L)
+        }
+        _positionMs.value = safeTarget
+        try {
+            mediaPlayer?.seekTo(safeTarget.toInt())
+        } catch (e: Exception) {
+            Log.e("RustAudioEngine", "seekTo error", e)
+        }
     }
 
     private fun startTickLoop() {

@@ -46,6 +46,7 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
     // Audio Playback States from Native Engine
     val playbackState: StateFlow<EngineState> = audioEngine.state
     val currentPositionMs: StateFlow<Long> = audioEngine.positionMs
+    val currentTrackDurationMs: StateFlow<Long> = audioEngine.currentDurationMs
     val isUsingBackup: StateFlow<Boolean> = audioEngine.isUsingBackup
 
     // Current playing metadata
@@ -186,6 +187,18 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
+
+        // Live Background Download Service Synchronization
+        viewModelScope.launch {
+            com.rustvibe.data.remote.RustVibeDownloadService.downloadProgress.collect { state ->
+                _downloadProgress.value = state
+            }
+        }
+        viewModelScope.launch {
+            com.rustvibe.data.remote.RustVibeDownloadService.downloadResultState.collect { state ->
+                _downloadResultState.value = state
+            }
+        }
     }
 
     override fun onCleared() {
@@ -299,167 +312,27 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
 
     fun confirmDownloadPlaylist(playlistResult: PlaylistSearchResult, chosenName: String) {
         val finalName = if (chosenName.isNotBlank()) chosenName.trim() else playlistResult.title
-        viewModelScope.launch(Dispatchers.IO) {
-            val playlistId = UUID.randomUUID().toString()
-            val newPlaylist = PlaylistEntity(
-                id = playlistId,
-                name = finalName
-            )
-            playlistDao.insertPlaylist(newPlaylist)
-            _detectedPlaylist.value = null
-
-            val total = playlistResult.tracks.size
-            var successCount = 0
-            val failedTracks = mutableListOf<SongSearchResult>()
-
-            playlistResult.tracks.forEachIndexed { index, song ->
-                val baseFrac = index.toFloat() / total.toFloat()
-                _downloadProgress.value = DownloadProgressState(
-                    isDownloading = true,
-                    trackId = song.id,
-                    title = song.title,
-                    progress = baseFrac,
-                    percent = (baseFrac * 100).toInt(),
-                    speedText = "Lagu ${index + 1}/$total",
-                    statusText = "Menyimpan ke playlist '$finalName'"
-                )
-
-                try {
-                    val pkg = YtDlpStandaloneManager.downloadDualPackage(getApplication(), song) { frac, status ->
-                        val subFrac = (index.toFloat() + frac) / total.toFloat()
-                        _downloadProgress.value = DownloadProgressState(
-                            isDownloading = true,
-                            trackId = song.id,
-                            title = song.title,
-                            progress = subFrac,
-                            percent = (subFrac * 100).toInt(),
-                            speedText = status,
-                            statusText = "Lagu ${index + 1}/$total: Menyimpan ke '$finalName'"
-                        )
-                    }
-
-                    val trackEntity = TrackEntity(
-                        id = pkg.trackId,
-                        title = pkg.title,
-                        producer = pkg.producer,
-                        durationSeconds = pkg.durationSeconds,
-                        thumbnailPath = pkg.thumbnailFile.absolutePath,
-                        m4aFilePath = pkg.m4aFile.absolutePath,
-                        backupMp3FilePath = pkg.backupMp3File?.absolutePath,
-                        lyricsFilePath = pkg.lyricsFile?.absolutePath,
-                        hasSyncedLyrics = pkg.hasSyncedLyrics,
-                        isEphemeral = false
-                    )
-                    playlistDao.insertTrack(trackEntity)
-                    playlistDao.appendTrackToPlaylist(playlistId, trackEntity.id)
-                    successCount++
-                } catch (e: Exception) {
-                    failedTracks.add(song)
-                    Log.e("RustVibeVM", "Batch song download error for ${song.title}", e)
-                }
-            }
-
-            _downloadProgress.value = null
-
-            if (failedTracks.isNotEmpty()) {
-                _downloadResultState.value = com.rustvibe.data.remote.DownloadResultDialogState(
-                    playlistId = playlistId,
-                    playlistName = finalName,
-                    successCount = successCount,
-                    failedCount = failedTracks.size,
-                    failedSongs = failedTracks
-                )
-            } else {
-                _downloadProgress.value = DownloadProgressState(
-                    isDownloading = false,
-                    title = "Playlist '$finalName' Tersimpan!",
-                    progress = 1.0f,
-                    percent = 100,
-                    speedText = "Selesai",
-                    statusText = "Semua $successCount lagu berhasil disimpan ke playlist"
-                )
-                delay(2500)
-                _downloadProgress.value = null
-            }
-        }
+        _detectedPlaylist.value = null
+        com.rustvibe.data.remote.RustVibeDownloadService.startDownload(
+            context = getApplication(),
+            playlistName = finalName,
+            songs = playlistResult.tracks
+        )
     }
 
     fun retryFailedDownloads(state: com.rustvibe.data.remote.DownloadResultDialogState) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _downloadResultState.value = null
-            val total = state.failedSongs.size
-            var newlySucceeded = 0
-            val stillFailed = mutableListOf<SongSearchResult>()
+        _downloadResultState.value = null
+        com.rustvibe.data.remote.RustVibeDownloadService.retryFailed(
+            context = getApplication(),
+            playlistId = state.playlistId,
+            playlistName = state.playlistName,
+            failedSongs = state.failedSongs
+        )
+    }
 
-            state.failedSongs.forEachIndexed { index, song ->
-                val baseFrac = index.toFloat() / total.toFloat()
-                _downloadProgress.value = DownloadProgressState(
-                    isDownloading = true,
-                    trackId = song.id,
-                    title = song.title,
-                    progress = baseFrac,
-                    percent = (baseFrac * 100).toInt(),
-                    speedText = "Mencoba Ulang ${index + 1}/$total",
-                    statusText = "Menyimpan ke playlist '${state.playlistName}'"
-                )
-
-                try {
-                    val pkg = YtDlpStandaloneManager.downloadDualPackage(getApplication(), song) { frac, status ->
-                        val subFrac = (index.toFloat() + frac) / total.toFloat()
-                        _downloadProgress.value = DownloadProgressState(
-                            isDownloading = true,
-                            trackId = song.id,
-                            title = song.title,
-                            progress = subFrac,
-                            percent = (subFrac * 100).toInt(),
-                            speedText = status,
-                            statusText = "Mencoba Ulang ${index + 1}/$total"
-                        )
-                    }
-
-                    val trackEntity = TrackEntity(
-                        id = pkg.trackId,
-                        title = pkg.title,
-                        producer = pkg.producer,
-                        durationSeconds = pkg.durationSeconds,
-                        thumbnailPath = pkg.thumbnailFile.absolutePath,
-                        m4aFilePath = pkg.m4aFile.absolutePath,
-                        backupMp3FilePath = pkg.backupMp3File?.absolutePath,
-                        lyricsFilePath = pkg.lyricsFile?.absolutePath,
-                        hasSyncedLyrics = pkg.hasSyncedLyrics,
-                        isEphemeral = false
-                    )
-                    playlistDao.insertTrack(trackEntity)
-                    playlistDao.appendTrackToPlaylist(state.playlistId, trackEntity.id)
-                    newlySucceeded++
-                } catch (e: Exception) {
-                    stillFailed.add(song)
-                    Log.e("RustVibeVM", "Retry failed for ${song.title}", e)
-                }
-            }
-
-            _downloadProgress.value = null
-            val updatedSuccessCount = state.successCount + newlySucceeded
-
-            if (stillFailed.isNotEmpty()) {
-                _downloadResultState.value = state.copy(
-                    successCount = updatedSuccessCount,
-                    failedCount = stillFailed.size,
-                    failedSongs = stillFailed
-                )
-            } else {
-                _downloadProgress.value = DownloadProgressState(
-                    isDownloading = false,
-                    title = "Playlist '${state.playlistName}' Lengkap!",
-                    progress = 1.0f,
-                    percent = 100,
-                    speedText = "Selesai",
-                    statusText = "Semua $updatedSuccessCount lagu sekarang tersimpan di playlist"
-                )
-                delay(2500)
-                _downloadProgress.value = null
-            }
-        }
+    fun cancelActiveDownload() {
+        com.rustvibe.data.remote.RustVibeDownloadService.cancelDownload(getApplication())
+        _downloadProgress.value = null
     }
 
     fun selectOnlinePlaylist(pl: OnlinePlaylistResult) {
@@ -586,67 +459,18 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
                 delay(2000)
                 _downloadProgress.value = null
             } catch (e: Exception) {
-                Log.e("RustVibeVM", "Download fallback error", e)
-                val context = getApplication<Application>()
-                val audioDir = File(context.filesDir, "audio").apply { mkdirs() }
-                val thumbDir = File(context.filesDir, "thumbnails").apply { mkdirs() }
-                val lyricsDir = File(context.filesDir, "lyrics").apply { mkdirs() }
-
-                val mockM4a = File(audioDir, "${result.id}.mp3")
-                if (!mockM4a.exists() || mockM4a.length() == 0L) {
-                    try {
-                        context.assets.open("audio/starter_song.mp3").use { input ->
-                            mockM4a.outputStream().use { output -> input.copyTo(output) }
-                        }
-                    } catch (ex: Exception) {
-                        mockM4a.createNewFile()
-                    }
-                }
-
-                val thumbFile = File(thumbDir, "${result.id}.jpg")
-                if (!thumbFile.exists() || thumbFile.length() == 0L) {
-                    var downloaded = false
-                    val ytUrl = if (result.thumbnailUrl.isNotEmpty()) result.thumbnailUrl else "https://i.ytimg.com/vi/${result.id}/hqdefault.jpg"
-                    try {
-                        val conn = java.net.URL(ytUrl).openConnection() as java.net.HttpURLConnection
-                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android)")
-                        conn.connectTimeout = 6000
-                        conn.readTimeout = 6000
-                        if (conn.responseCode == 200) {
-                            conn.inputStream.use { input ->
-                                thumbFile.outputStream().use { output -> input.copyTo(output) }
-                            }
-                            downloaded = true
-                        }
-                    } catch (e: Exception) {
-                        Log.w("RustVibeVM", "Direct thumbnail download failed", e)
-                    }
-
-                    if (!downloaded) {
-                        val demoIndex = (Math.abs(result.id.hashCode()) % 4) + 1
-                        try {
-                            context.assets.open("thumbnails/demo_$demoIndex.jpg").use { input ->
-                                thumbFile.outputStream().use { output -> input.copyTo(output) }
-                            }
-                        } catch (ex: Exception) {
-                            thumbFile.createNewFile()
-                        }
-                    }
-                }
-
-                val lrcFile = File(lyricsDir, "${result.id}.lrc")
-
-                _pendingDownloadedPackage.value = DownloadedPackage(
+                Log.e("RustVibeVM", "Download error for ${result.title}", e)
+                _downloadProgress.value = DownloadProgressState(
+                    isDownloading = false,
                     trackId = result.id,
                     title = result.title,
-                    producer = result.producer,
-                    durationSeconds = result.durationSeconds,
-                    m4aFile = mockM4a,
-                    backupMp3File = mockM4a,
-                    thumbnailFile = thumbFile,
-                    lyricsFile = if (lrcFile.exists() && lrcFile.length() > 0) lrcFile else null,
-                    hasSyncedLyrics = lrcFile.exists() && lrcFile.length() > 0
+                    progress = 0f,
+                    percent = 0,
+                    speedText = "Gagal",
+                    statusText = "Gagal mengunduh audio asli: ${e.message}"
                 )
+                delay(3000)
+                _downloadProgress.value = null
             }
         }
     }
@@ -971,9 +795,33 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
+                // 4. Repair Track Duration using real MediaMetadataRetriever if stuck at fake 210s (3:30) or invalid
+                var updatedDuration = track.durationSeconds
+                val fileForDuration = File(updatedM4a)
+                if (fileForDuration.exists() && fileForDuration.length() > 0L) {
+                    try {
+                        val retriever = android.media.MediaMetadataRetriever()
+                        retriever.setDataSource(fileForDuration.absolutePath)
+                        val durStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+                        val durMs = durStr?.toLongOrNull() ?: 0L
+                        retriever.release()
+                        if (durMs > 0L) {
+                            val realSec = (durMs / 1000L).toInt()
+                            if (realSec != track.durationSeconds) {
+                                Log.d("RustVibeVM", "Corrected track duration for '${track.title}': ${track.durationSeconds}s -> ${realSec}s")
+                                updatedDuration = realSec
+                                modified = true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w("RustVibeVM", "Failed to retrieve duration for ${track.id}", e)
+                    }
+                }
+
                 if (modified) {
                     playlistDao.insertTrack(
                         track.copy(
+                            durationSeconds = updatedDuration,
                             m4aFilePath = updatedM4a,
                             backupMp3FilePath = updatedM4a,
                             thumbnailPath = updatedThumb,

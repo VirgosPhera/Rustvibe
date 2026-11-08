@@ -67,7 +67,8 @@ fun PlayerScreen(
     val isUsingBackup by viewModel.isUsingBackup.collectAsState()
     val colors = AppTheme.colors
 
-    val totalDurationMs = ((track?.durationSeconds ?: 0) * 1000).toLong()
+    val liveDurationMs by viewModel.currentTrackDurationMs.collectAsState()
+    val totalDurationMs = if (liveDurationMs > 1000L) liveDurationMs else ((track?.durationSeconds ?: 0) * 1000).toLong()
     var isLyricsExpanded by remember { mutableStateOf(true) }
 
     val configuration = LocalConfiguration.current

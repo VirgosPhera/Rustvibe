@@ -1,0 +1,892 @@
+[
+  {
+    "command": "frame.create",
+    "params": {
+      "name": "Portrait \u2014 Notifikasi Sistem Android (Background Download Ongoing)",
+      "x": 2000,
+      "y": 6200,
+      "width": 420,
+      "height": 936,
+      "props": {
+        "fill": "#120B0C"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 24,
+      "y": 14,
+      "text": "09:41",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 340,
+      "y": 14,
+      "text": "4G  100%",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 24,
+      "y": 60,
+      "text": "Notifikasi Sistem",
+      "props": {
+        "fontSize": 22,
+        "fontWeight": 800,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 24,
+      "y": 90,
+      "text": "Latar Belakang Tetap Berjalan Walau Layar Mati",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 16,
+      "y": 130,
+      "width": 388,
+      "height": 220,
+      "props": {
+        "fill": "#2E1E1F",
+        "cornerRadius": [
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 150,
+      "width": 28,
+      "height": 28,
+      "props": {
+        "fill": "#DC3500",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "vector.create",
+    "params": {
+      "parent": 2034,
+      "x": 38,
+      "y": 156,
+      "width": 16,
+      "height": 16,
+      "path": "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z",
+      "props": {
+        "fill": "#FFFFFF"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 68,
+      "y": 154,
+      "text": "RustVibe \u2022 Unduhan Musik Aktif",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 336,
+      "y": 154,
+      "text": "sekarang",
+      "props": {
+        "fontSize": 11,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 190,
+      "text": "Mengunduh: YJCA (Yang Jersey Club Aja)",
+      "props": {
+        "fontSize": 15,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 214,
+      "text": "Lagu 14 dari 26 \u2022 2.4 MB/s (Stabil)",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 242,
+      "width": 356,
+      "height": 8,
+      "props": {
+        "fill": "#523639",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 242,
+      "width": 192,
+      "height": 8,
+      "props": {
+        "fill": "#DC3500",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 258,
+      "text": "54%",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#DC3500",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 70,
+      "y": 258,
+      "text": "Sedang unduh: YOASOBI - Idol (Jersey Club)",
+      "props": {
+        "fontSize": 11,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 288,
+      "width": 140,
+      "height": 38,
+      "props": {
+        "fill": "#452E30",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 62,
+      "y": 299,
+      "text": "Buka Aplikasi",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 184,
+      "y": 288,
+      "width": 140,
+      "height": 38,
+      "props": {
+        "fill": "#52170B",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 226,
+      "y": 299,
+      "text": "Hentikan",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#FF897D",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 16,
+      "y": 370,
+      "width": 388,
+      "height": 180,
+      "props": {
+        "fill": "#382426",
+        "cornerRadius": [
+          24,
+          24,
+          24,
+          24
+        ]
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 390,
+      "width": 36,
+      "height": 36,
+      "props": {
+        "fill": "#1B3B22",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "vector.create",
+    "params": {
+      "parent": 2034,
+      "x": 40,
+      "y": 398,
+      "width": 20,
+      "height": 20,
+      "path": "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
+      "props": {
+        "fill": "#78DC8B"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 80,
+      "y": 392,
+      "text": "Garansi Background Service",
+      "props": {
+        "fontSize": 16,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 80,
+      "y": 412,
+      "text": "Android Foreground Service & WakeLock",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#78DC8B",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 445,
+      "text": "\u2022 Download TIDAK AKAN mati saat keluar dari aplikasi",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 470,
+      "text": "\u2022 Layar HP bisa dikunci / dimatikan tanpa putus",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 495,
+      "text": "\u2022 Bebas buka WhatsApp, game, YouTube, atau sosmed",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2034,
+      "x": 32,
+      "y": 520,
+      "text": "\u2022 Auto-save per lagu langsung tersimpan di SQLite Room",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "frame.create",
+    "params": {
+      "name": "Landscape \u2014 Notifikasi Sistem & Floating Download Banner",
+      "x": 2000,
+      "y": 7200,
+      "width": 936,
+      "height": 420,
+      "props": {
+        "fill": "#120B0C"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 24,
+      "y": 24,
+      "width": 420,
+      "height": 240,
+      "props": {
+        "fill": "#2E1E1F",
+        "cornerRadius": [
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 44,
+      "width": 28,
+      "height": 28,
+      "props": {
+        "fill": "#DC3500",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "vector.create",
+    "params": {
+      "parent": 2063,
+      "x": 50,
+      "y": 50,
+      "width": 16,
+      "height": 16,
+      "path": "M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z",
+      "props": {
+        "fill": "#FFFFFF"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 82,
+      "y": 48,
+      "text": "RustVibe \u2022 Foreground Service",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 86,
+      "text": "Mengunduh 26 Lagu di Latar Belakang",
+      "props": {
+        "fontSize": 16,
+        "fontWeight": 800,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 114,
+      "text": "Lagu 14/26: YOASOBI - Idol \u2022 2.4 MB/s",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 142,
+      "width": 380,
+      "height": 8,
+      "props": {
+        "fill": "#523639",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 142,
+      "width": 205,
+      "height": 8,
+      "props": {
+        "fill": "#DC3500",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 160,
+      "text": "54% Selesai \u2014 HP Boleh Dimatikan",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#DC3500",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 44,
+      "y": 190,
+      "width": 130,
+      "height": 36,
+      "props": {
+        "fill": "#452E30",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 66,
+      "y": 200,
+      "text": "Buka RustVibe",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 470,
+      "y": 24,
+      "width": 440,
+      "height": 370,
+      "props": {
+        "fill": "#382426",
+        "cornerRadius": [
+          28,
+          28,
+          28,
+          28
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 48,
+      "text": "Sinkronisasi State Aplikasi & SQLite",
+      "props": {
+        "fontSize": 18,
+        "fontWeight": 800,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 76,
+      "text": "Ketika aplikasi dibuka kembali, semua lagu otomatis muncul",
+      "props": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 110,
+      "width": 388,
+      "height": 56,
+      "props": {
+        "fill": "#452E30",
+        "cornerRadius": [
+          18,
+          18,
+          18,
+          18
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 122,
+      "text": "13 Lagu Telah Tersimpan di Penyimpanan Internal",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 142,
+      "text": "Format M4A 128kbps AAC \u2022 ID3 & Album Art Utuh",
+      "props": {
+        "fontSize": 11,
+        "fontWeight": 400,
+        "fill": "#78DC8B",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 178,
+      "width": 388,
+      "height": 56,
+      "props": {
+        "fill": "#452E30",
+        "cornerRadius": [
+          18,
+          18,
+          18,
+          18
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 190,
+      "text": "1 Lagu Sedang Berjalan: YOASOBI - Idol",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 210,
+      "text": "DirectYouTubeStreamExtractor (VISIONOS + ANDROID_VR)",
+      "props": {
+        "fontSize": 11,
+        "fontWeight": 700,
+        "fill": "#DC3500",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 246,
+      "width": 388,
+      "height": 56,
+      "props": {
+        "fill": "#452E30",
+        "cornerRadius": [
+          18,
+          18,
+          18,
+          18
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 258,
+      "text": "12 Lagu Antrean di Memori Background Service",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 516,
+      "y": 278,
+      "text": "Otomatis lanjut tanpa campur tangan pengguna",
+      "props": {
+        "fontSize": 11,
+        "fontWeight": 400,
+        "fill": "#F8E6D2",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  },
+  {
+    "command": "shape.rectangle",
+    "params": {
+      "parent": 2063,
+      "x": 496,
+      "y": 320,
+      "width": 388,
+      "height": 48,
+      "props": {
+        "fill": "#DC3500",
+        "cornerRadius": [
+          9999,
+          9999,
+          9999,
+          9999
+        ]
+      }
+    }
+  },
+  {
+    "command": "text.create",
+    "params": {
+      "parent": 2063,
+      "x": 540,
+      "y": 336,
+      "text": "Semua Proses Terlindungi oleh WakeLock Sistem",
+      "props": {
+        "fontSize": 13,
+        "fontWeight": 700,
+        "fill": "#FFFFFF",
+        "fontFamily": "Plus Jakarta Sans"
+      }
+    }
+  }
+]

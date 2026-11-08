@@ -16,13 +16,13 @@ data class SongSearchResult(
     val producer: String,
     val durationSeconds: Int,
     val thumbnailUrl: String
-)
+) : java.io.Serializable
 
 data class PlaylistSearchResult(
     val id: String,
     val title: String,
     val tracks: List<SongSearchResult>
-)
+) : java.io.Serializable
 
 data class OnlinePlaylistResult(
     val id: String,
@@ -253,12 +253,40 @@ object YtDlpStandaloneManager {
                                 if (u.isNotEmpty()) thumbUrl = u
                             }
 
+                            var durationSec = 180
+                            val overlays = lvm.optJSONObject("contentImage")
+                                ?.optJSONObject("thumbnailViewModel")
+                                ?.optJSONArray("overlays")
+                            if (overlays != null) {
+                                for (oi in 0 until overlays.length()) {
+                                    val overlay = overlays.optJSONObject(oi)
+                                    val timeText = overlay?.optJSONObject("thumbnailOverlayTimeStatusRenderer")
+                                        ?.optJSONObject("text")
+                                        ?.optString("content", "")
+                                        ?: overlay?.optJSONObject("thumbnailOverlayBadgeViewModel")
+                                            ?.optJSONArray("thumbnailBadges")
+                                            ?.optJSONObject(0)
+                                            ?.optJSONObject("thumbnailBadgeViewModel")
+                                            ?.optString("text", "")
+                                        ?: ""
+                                    if (timeText.isNotEmpty() && timeText.contains(":")) {
+                                        val parts = timeText.trim().split(":")
+                                        if (parts.size == 2) {
+                                            durationSec = (parts[0].toIntOrNull() ?: 0) * 60 + (parts[1].toIntOrNull() ?: 0)
+                                        } else if (parts.size == 3) {
+                                            durationSec = (parts[0].toIntOrNull() ?: 0) * 3600 + (parts[1].toIntOrNull() ?: 0) * 60 + (parts[2].toIntOrNull() ?: 0)
+                                        }
+                                        break
+                                    }
+                                }
+                            }
+
                             results.add(
                                 SongSearchResult(
                                     id = videoId,
                                     title = title,
                                     producer = "YouTube Creator",
-                                    durationSeconds = 210,
+                                    durationSeconds = durationSec,
                                     thumbnailUrl = thumbUrl
                                 )
                             )
@@ -780,11 +808,22 @@ object YtDlpStandaloneManager {
 
         onProgress(1.0f, "Selesai")
 
+        val exactDuration = try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(m4aPath.absolutePath)
+            val durStr = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+            val durMs = durStr?.toLongOrNull() ?: 0L
+            retriever.release()
+            if (durMs > 0L) (durMs / 1000L).toInt() else result.durationSeconds
+        } catch (e: Exception) {
+            result.durationSeconds
+        }
+
         DownloadedPackage(
             trackId = result.id,
             title = result.title,
             producer = result.producer,
-            durationSeconds = result.durationSeconds,
+            durationSeconds = exactDuration,
             m4aFile = m4aPath,
             backupMp3File = if (backupMp3Path.exists() && backupMp3Path.length() > 0) backupMp3Path else null,
             thumbnailFile = thumbPath,
