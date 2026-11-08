@@ -46,6 +46,7 @@ import coil.compose.AsyncImage
 import com.rustvibe.audio.EngineState
 import com.rustvibe.ui.RustVibeViewModel
 import com.rustvibe.ui.components.ExpressiveIcons
+import com.rustvibe.ui.components.SwipeableCoverCarousel
 import com.rustvibe.ui.components.SyncedLyricsStage
 import com.rustvibe.ui.theme.AppTheme
 import com.rustvibe.ui.theme.FullPillShape
@@ -59,6 +60,7 @@ fun PlayerScreen(
     modifier: Modifier = Modifier
 ) {
     val track by viewModel.currentTrack.collectAsState()
+    val queue by viewModel.currentQueue.collectAsState()
     val lyrics by viewModel.currentLyrics.collectAsState()
     val positionMs by viewModel.currentPositionMs.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
@@ -160,24 +162,15 @@ fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(if (isLyricsExpanded) 88.dp else 110.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(colors.surface),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (!track?.thumbnailPath.isNullOrEmpty() && File(track!!.thumbnailPath).exists()) {
-                            AsyncImage(
-                                model = File(track!!.thumbnailPath),
-                                contentDescription = "Cover",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(imageVector = ExpressiveIcons.Music, contentDescription = null, tint = colors.primary, modifier = Modifier.size(44.dp))
-                        }
-                    }
+                    SwipeableCoverCarousel(
+                        currentTrack = track,
+                        queue = queue,
+                        onSkipNext = { viewModel.skipToNext() },
+                        onSkipPrev = { viewModel.skipToPrev() },
+                        coverSize = if (isLyricsExpanded) 88.dp else 110.dp,
+                        cornerRadius = 16.dp,
+                        showHintAndDots = false
+                    )
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -404,31 +397,17 @@ fun PlayerScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                // Big Album Art Cover (Dynamic Size: 170dp when lyrics open, 250dp when closed)
+                // Big Album Art Cover with Horizontal Drag / Swipe to Change Song
                 val coverSize = if (isLyricsExpanded) 170.dp else 250.dp
-                Box(
-                    modifier = Modifier
-                        .size(coverSize)
-                        .clip(RoundedCornerShape(if (isLyricsExpanded) 22.dp else 30.dp))
-                        .background(colors.surface),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!track?.thumbnailPath.isNullOrEmpty() && File(track!!.thumbnailPath).exists() && File(track!!.thumbnailPath).length() > 0) {
-                        AsyncImage(
-                            model = File(track!!.thumbnailPath),
-                            contentDescription = "Cover",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = ExpressiveIcons.Music,
-                            contentDescription = null,
-                            tint = colors.primary,
-                            modifier = Modifier.size(if (isLyricsExpanded) 70.dp else 96.dp)
-                        )
-                    }
-                }
+                SwipeableCoverCarousel(
+                    currentTrack = track,
+                    queue = queue,
+                    onSkipNext = { viewModel.skipToNext() },
+                    onSkipPrev = { viewModel.skipToPrev() },
+                    coverSize = coverSize,
+                    cornerRadius = if (isLyricsExpanded) 22.dp else 30.dp,
+                    showHintAndDots = !isLyricsExpanded
+                )
 
                 Spacer(modifier = Modifier.height(if (isLyricsExpanded) 16.dp else 22.dp))
 

@@ -3,8 +3,10 @@ package com.rustvibe.ui.screens
 import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,14 +22,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.rustvibe.audio.EngineState
 import com.rustvibe.data.local.PlaylistEntity
 import com.rustvibe.ui.RustVibeViewModel
+import com.rustvibe.ui.components.DeletePlaylistsConfirmDialog
 import com.rustvibe.ui.components.ExpressiveBottomNavigation
 import com.rustvibe.ui.components.ExpressiveFloatingPlayer
 import com.rustvibe.ui.components.ExpressiveIcons
@@ -47,6 +55,7 @@ import com.rustvibe.ui.theme.FullPillShape
 import com.rustvibe.ui.theme.PureWhite
 import com.rustvibe.ui.theme.TrackCardShape
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlaylistHubScreen(
     viewModel: RustVibeViewModel,
@@ -64,6 +73,10 @@ fun PlaylistHubScreen(
     val scannedFolder by viewModel.scannedLocalFolder.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
     val colors = AppTheme.colors
+
+    var isSelectionMode by remember { mutableStateOf(false) }
+    var selectedPlaylistIds by remember { mutableStateOf(setOf<String>()) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     val openFolderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
@@ -88,6 +101,10 @@ fun PlaylistHubScreen(
             ExpressiveNavigationRail(
                 selectedTab = NavTab.PLAYLIST,
                 onTabSelected = { tab ->
+                    if (isSelectionMode) {
+                        isSelectionMode = false
+                        selectedPlaylistIds = emptySet()
+                    }
                     when (tab) {
                         NavTab.BERANDA -> onNavigateToHome()
                         NavTab.CARI -> onNavigateToSearch()
@@ -111,58 +128,159 @@ fun PlaylistHubScreen(
                         .padding(bottom = if (currentTrack != null) 68.dp else 12.dp, top = 14.dp)
                 ) {
                     // Header Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Koleksi Playlist",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = colors.textMain
-                        )
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Import Folder Button
-                            Box(
-                                modifier = Modifier
-                                    .clip(FullPillShape)
-                                    .background(colors.surfaceHigh)
-                                    .clickable { openFolderLauncher.launch(null) }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = ExpressiveIcons.FolderOpen,
-                                        contentDescription = null,
-                                        tint = colors.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(text = "Import Folder", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                    if (isSelectionMode) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.surfaceHigh)
+                                        .clickable {
+                                            isSelectionMode = false
+                                            selectedPlaylistIds = emptySet()
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(imageVector = ExpressiveIcons.Close, contentDescription = "Batal", tint = colors.textMain, modifier = Modifier.size(18.dp))
                                 }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "${selectedPlaylistIds.size} Playlist Dipilih",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textMain
+                                )
                             }
 
-                            // Buat Baru Button
-                            Box(
-                                modifier = Modifier
-                                    .clip(FullPillShape)
-                                    .background(colors.primary)
-                                    .clickable { viewModel.createPlaylist("Playlist Baru") }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = ExpressiveIcons.Plus,
-                                        contentDescription = null,
-                                        tint = PureWhite,
-                                        modifier = Modifier.size(16.dp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(FullPillShape)
+                                        .background(colors.surfaceHigh)
+                                        .clickable {
+                                            selectedPlaylistIds = if (selectedPlaylistIds.size == playlists.size) emptySet() else playlists.map { it.id }.toSet()
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (selectedPlaylistIds.size == playlists.size) "Lepas Semua" else "Pilih Semua",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.textMain
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(text = "Buat Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                }
+
+                                if (selectedPlaylistIds.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(FullPillShape)
+                                            .background(Color(0xFF52170B))
+                                            .clickable { showDeleteConfirmDialog = true }
+                                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = ExpressiveIcons.Trash,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFF897D),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Hapus (${selectedPlaylistIds.size})",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFFF897D)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Koleksi Playlist",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colors.textMain
+                            )
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // Hapus / Kelola Button
+                                if (playlists.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(FullPillShape)
+                                            .background(colors.surfaceHigh)
+                                            .clickable { isSelectionMode = true }
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = ExpressiveIcons.Trash,
+                                                contentDescription = null,
+                                                tint = colors.textSub,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(text = "Hapus", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textSub)
+                                        }
+                                    }
+                                }
+
+                                // Import Folder Button
+                                Box(
+                                    modifier = Modifier
+                                        .clip(FullPillShape)
+                                        .background(colors.surfaceHigh)
+                                        .clickable { openFolderLauncher.launch(null) }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = ExpressiveIcons.FolderOpen,
+                                            contentDescription = null,
+                                            tint = colors.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = "Import Folder", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                                    }
+                                }
+
+                                // Buat Baru Button
+                                Box(
+                                    modifier = Modifier
+                                        .clip(FullPillShape)
+                                        .background(colors.primary)
+                                        .clickable { viewModel.createPlaylist("Playlist Baru") }
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = ExpressiveIcons.Plus,
+                                            contentDescription = null,
+                                            tint = PureWhite,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = "Buat Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                    }
                                 }
                             }
                         }
@@ -181,10 +299,29 @@ fun PlaylistHubScreen(
                     ) {
                         items(playlists) { playlist ->
                             val thumbs by viewModel.getPlaylistThumbnails(playlist.id).collectAsState(initial = emptyList())
+                            val isSelected = playlist.id in selectedPlaylistIds
                             HubPlaylistGridCard(
                                 playlist = playlist,
                                 thumbnails = thumbs,
-                                onClick = { onNavigateToPlaylistDetail(playlist.id) }
+                                isSelectionMode = isSelectionMode,
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        selectedPlaylistIds = if (isSelected) {
+                                            selectedPlaylistIds - playlist.id
+                                        } else {
+                                            selectedPlaylistIds + playlist.id
+                                        }
+                                    } else {
+                                        onNavigateToPlaylistDetail(playlist.id)
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!isSelectionMode) {
+                                        isSelectionMode = true
+                                        selectedPlaylistIds = setOf(playlist.id)
+                                    }
+                                }
                             )
                         }
                     }
@@ -224,59 +361,138 @@ fun PlaylistHubScreen(
             ) {
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // Header + Buttons 9999px
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Playlist",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = colors.textMain
-                    )
+                // Header
+                if (isSelectionMode) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(colors.surfaceHigh)
+                                    .clickable {
+                                        isSelectionMode = false
+                                        selectedPlaylistIds = emptySet()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(imageVector = ExpressiveIcons.Close, contentDescription = "Batal", tint = colors.textMain, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "${selectedPlaylistIds.size} Dipilih",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textMain
+                                )
+                                Text(
+                                    text = "Ketuk playlist untuk memilih",
+                                    fontSize = 11.sp,
+                                    color = colors.textSub
+                                )
+                            }
+                        }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Import Folder Button
                         Box(
                             modifier = Modifier
                                 .clip(FullPillShape)
                                 .background(colors.surfaceHigh)
-                                .clickable { openFolderLauncher.launch(null) }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .clickable {
+                                    selectedPlaylistIds = if (selectedPlaylistIds.size == playlists.size) emptySet() else playlists.map { it.id }.toSet()
+                                }
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = ExpressiveIcons.FolderOpen,
-                                    contentDescription = null,
-                                    tint = colors.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "Import", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
-                            }
+                            Text(
+                                text = if (selectedPlaylistIds.size == playlists.size) "Batal Semua" else "Pilih Semua",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textMain
+                            )
                         }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Playlist",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colors.textMain
+                        )
 
-                        // Buat Baru Button
-                        Box(
-                            modifier = Modifier
-                                .clip(FullPillShape)
-                                .background(colors.primary)
-                                .clickable { viewModel.createPlaylist("Playlist Baru") }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = ExpressiveIcons.Plus,
-                                    contentDescription = null,
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Hapus / Kelola Button
+                            if (playlists.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(FullPillShape)
+                                        .background(colors.surfaceHigh)
+                                        .clickable { isSelectionMode = true }
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = ExpressiveIcons.Trash,
+                                            contentDescription = null,
+                                            tint = colors.textSub,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(text = "Hapus", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textSub)
+                                    }
+                                }
+                            }
+
+                            // Import Folder Button
+                            Box(
+                                modifier = Modifier
+                                    .clip(FullPillShape)
+                                    .background(colors.surfaceHigh)
+                                    .clickable { openFolderLauncher.launch(null) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.FolderOpen,
+                                        contentDescription = null,
+                                        tint = colors.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "Import", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textMain)
+                                }
+                            }
+
+                            // Buat Baru Button
+                            Box(
+                                modifier = Modifier
+                                    .clip(FullPillShape)
+                                    .background(colors.primary)
+                                    .clickable { viewModel.createPlaylist("Playlist Baru") }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = ExpressiveIcons.Plus,
+                                        contentDescription = null,
+                                        tint = PureWhite,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = "Baru", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
+                                }
                             }
                         }
                     }
@@ -285,38 +501,39 @@ fun PlaylistHubScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Filter Chips
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(FullPillShape)
-                            .background(colors.surfaceHigh)
-                            .clickable(onClick = onNavigateToHome)
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Text(text = "Semua", fontSize = 12.sp, color = colors.textSub)
+                if (!isSelectionMode) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(FullPillShape)
+                                .background(colors.surfaceHigh)
+                                .clickable(onClick = onNavigateToHome)
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Text(text = "Semua", fontSize = 12.sp, color = colors.textSub)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(FullPillShape)
+                                .background(colors.primary)
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Text(text = "Playlist", fontSize = 12.sp, color = PureWhite, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(FullPillShape)
+                                .background(colors.surfaceHigh)
+                                .clickable(onClick = onNavigateToOffline)
+                                .padding(horizontal = 16.dp, vertical = 7.dp)
+                        ) {
+                            Text(text = "Offline", fontSize = 12.sp, color = colors.textSub)
+                        }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(FullPillShape)
-                            .background(colors.primary)
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Text(text = "Playlist", fontSize = 12.sp, color = PureWhite, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(FullPillShape)
-                            .background(colors.surfaceHigh)
-                            .clickable(onClick = onNavigateToOffline)
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
-                    ) {
-                        Text(text = "Offline", fontSize = 12.sp, color = colors.textSub)
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 // Adaptive Grid of Playlist Cards
                 LazyVerticalGrid(
@@ -329,24 +546,72 @@ fun PlaylistHubScreen(
                 ) {
                     items(playlists) { playlist ->
                         val thumbs by viewModel.getPlaylistThumbnails(playlist.id).collectAsState(initial = emptyList())
+                        val isSelected = playlist.id in selectedPlaylistIds
                         HubPlaylistGridCard(
                             playlist = playlist,
                             thumbnails = thumbs,
-                            onClick = { onNavigateToPlaylistDetail(playlist.id) }
+                            isSelectionMode = isSelectionMode,
+                            isSelected = isSelected,
+                            onClick = {
+                                if (isSelectionMode) {
+                                    selectedPlaylistIds = if (isSelected) {
+                                        selectedPlaylistIds - playlist.id
+                                    } else {
+                                        selectedPlaylistIds + playlist.id
+                                    }
+                                } else {
+                                    onNavigateToPlaylistDetail(playlist.id)
+                                }
+                            },
+                            onLongClick = {
+                                if (!isSelectionMode) {
+                                    isSelectionMode = true
+                                    selectedPlaylistIds = setOf(playlist.id)
+                                }
+                            }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(if (currentTrack != null) 146.dp else 84.dp))
+                Spacer(modifier = Modifier.height(if (currentTrack != null || isSelectionMode) 146.dp else 84.dp))
             }
 
-            // Floating Mini Player & Bottom Navigation Bar
+            // Bottom Actions (Selection Delete Bar OR Floating Mini Player + Bottom Nav)
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
             ) {
-                if (currentTrack != null) {
+                if (isSelectionMode) {
+                    if (selectedPlaylistIds.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .clip(FullPillShape)
+                                .background(Color(0xFF52170B))
+                                .clickable { showDeleteConfirmDialog = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = ExpressiveIcons.Trash,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFF897D),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Hapus ${selectedPlaylistIds.size} Playlist Terpilih",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFF897D)
+                                )
+                            }
+                        }
+                    }
+                } else if (currentTrack != null) {
                     ExpressiveFloatingPlayer(
                         title = currentTrack!!.title,
                         artist = currentTrack!!.producer,
@@ -362,6 +627,10 @@ fun PlaylistHubScreen(
                 ExpressiveBottomNavigation(
                     selectedTab = NavTab.PLAYLIST,
                     onTabSelected = { tab ->
+                        if (isSelectionMode) {
+                            isSelectionMode = false
+                            selectedPlaylistIds = emptySet()
+                        }
                         when (tab) {
                             NavTab.BERANDA -> onNavigateToHome()
                             NavTab.CARI -> onNavigateToSearch()
@@ -382,23 +651,46 @@ fun PlaylistHubScreen(
             onDismiss = { viewModel.dismissLocalFolderDialog() }
         )
     }
+
+    // Modal Dialog: Delete Playlists Confirmation
+    if (showDeleteConfirmDialog) {
+        val selectedObjects = playlists.filter { it.id in selectedPlaylistIds }
+        DeletePlaylistsConfirmDialog(
+            selectedPlaylists = selectedObjects,
+            onConfirmDelete = {
+                viewModel.deletePlaylists(selectedPlaylistIds)
+                selectedPlaylistIds = emptySet()
+                isSelectionMode = false
+                showDeleteConfirmDialog = false
+            },
+            onDismiss = { showDeleteConfirmDialog = false }
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HubPlaylistGridCard(
     playlist: PlaylistEntity,
     thumbnails: List<String> = emptyList(),
-    onClick: () -> Unit
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val colors = AppTheme.colors
+    val cardBg = if (isSelected) Color(0xFF52170B) else colors.surface
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp)
             .clip(TrackCardShape)
-            .background(colors.surface)
-            .clickable(onClick = onClick)
+            .background(cardBg)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(12.dp)
     ) {
         Column {
@@ -420,6 +712,27 @@ private fun HubPlaylistGridCard(
                 fontSize = 12.sp,
                 color = colors.textSub
             )
+        }
+
+        // Selection Checkmark Badge
+        if (isSelectionMode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) colors.primary else colors.surfaceHigh),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = ExpressiveIcons.Check,
+                        contentDescription = null,
+                        tint = PureWhite,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
     }
 }

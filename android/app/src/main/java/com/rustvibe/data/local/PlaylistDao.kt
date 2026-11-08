@@ -70,6 +70,21 @@ interface PlaylistDao {
     @Query("DELETE FROM playlists WHERE id = :playlistId")
     suspend fun deletePlaylist(playlistId: String)
 
+    @Query("DELETE FROM playlist_tracks WHERE playlistId = :playlistId")
+    suspend fun deletePlaylistTracks(playlistId: String)
+
+    @Query("DELETE FROM playlist_tracks WHERE playlistId IN (:playlistIds)")
+    suspend fun deletePlaylistTracksBatch(playlistIds: List<String>)
+
+    @Query("DELETE FROM playlists WHERE id IN (:playlistIds)")
+    suspend fun deletePlaylistsBatch(playlistIds: List<String>)
+
+    @Transaction
+    suspend fun deletePlaylists(playlistIds: List<String>) {
+        deletePlaylistTracksBatch(playlistIds)
+        deletePlaylistsBatch(playlistIds)
+    }
+
     @Query("UPDATE playlist_tracks SET position = :newPos WHERE playlistId = :playlistId AND trackId = :trackId")
     suspend fun updateTrackPosition(playlistId: String, trackId: String, newPos: Int)
 

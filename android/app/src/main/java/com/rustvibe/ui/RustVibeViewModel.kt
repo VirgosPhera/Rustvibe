@@ -843,6 +843,19 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun deletePlaylist(playlistId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistDao.deletePlaylists(listOf(playlistId))
+        }
+    }
+
+    fun deletePlaylists(playlistIds: Collection<String>) {
+        if (playlistIds.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistDao.deletePlaylists(playlistIds.toList())
+        }
+    }
+
     private suspend fun repairAllExistingTracks() {
         val context = getApplication<Application>()
         val audioDir = File(context.filesDir, "audio").apply { mkdirs() }
