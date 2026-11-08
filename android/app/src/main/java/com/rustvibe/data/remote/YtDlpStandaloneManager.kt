@@ -42,6 +42,14 @@ data class DownloadProgressState(
     val statusText: String = ""
 )
 
+data class DownloadResultDialogState(
+    val playlistId: String,
+    val playlistName: String,
+    val successCount: Int,
+    val failedCount: Int,
+    val failedSongs: List<SongSearchResult> = emptyList()
+)
+
 data class DownloadedPackage(
     val trackId: String,
     val title: String,
@@ -682,17 +690,38 @@ object YtDlpStandaloneManager {
         }
 
         onProgress(0.5f, "Mengunduh Aliran Audio M4A...")
-        // 3. Audio Download via yt-dlp with visionos/android client
+
+        // 3. Native Direct Stream Extraction via DirectYouTubeStreamExtractor (Primary Bypasser)
+        var directDownloadSucceeded = false
         try {
-            val primaryRequest = YoutubeDLRequest(url).apply {
-                addOption("-f", "bestaudio[ext=m4a]/bestaudio/ba/b")
-                addOption("-o", m4aPath.absolutePath)
-                addOption("--extractor-args", "youtube:player_client=visionos,android")
-                addOption("--no-check-certificates")
+            Log.d(TAG, "Attempting DirectYouTubeStreamExtractor for videoId=${result.id}...")
+            val directStreamUrl = DirectYouTubeStreamExtractor.resolveAudioStreamUrl(result.id)
+            if (!directStreamUrl.isNullOrEmpty()) {
+                val ok = DirectYouTubeStreamExtractor.downloadDirectAudio(directStreamUrl, m4aPath) { prog, speed ->
+                    onProgress(0.5f + (prog * 0.45f), speed)
+                }
+                if (ok && m4aPath.exists() && m4aPath.length() > 50_000L) {
+                    directDownloadSucceeded = true
+                    Log.d(TAG, "DirectYouTubeStreamExtractor succeeded: ${m4aPath.length()} bytes")
+                }
             }
-            YoutubeDL.getInstance().execute(primaryRequest)
         } catch (e: Exception) {
-            Log.e(TAG, "Primary M4A download error", e)
+            Log.w(TAG, "DirectYouTubeStreamExtractor error for ${result.id}", e)
+        }
+
+        // 4. Fallback: Audio Download via yt-dlp with visionos/android client if direct stream didn't finish
+        if (!directDownloadSucceeded && (!m4aPath.exists() || m4aPath.length() == 0L)) {
+            try {
+                val primaryRequest = YoutubeDLRequest(url).apply {
+                    addOption("-f", "bestaudio[ext=m4a]/bestaudio/ba/b")
+                    addOption("-o", m4aPath.absolutePath)
+                    addOption("--extractor-args", "youtube:player_client=visionos,android")
+                    addOption("--no-check-certificates")
+                }
+                YoutubeDL.getInstance().execute(primaryRequest)
+            } catch (e: Exception) {
+                Log.e(TAG, "Primary M4A download error", e)
+            }
         }
 
         // Direct Stream Extraction Fallback via -g if file is 0 bytes or missing

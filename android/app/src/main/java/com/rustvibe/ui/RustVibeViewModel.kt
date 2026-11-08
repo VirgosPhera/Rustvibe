@@ -81,6 +81,14 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
     private val _downloadProgress = MutableStateFlow<DownloadProgressState?>(null)
     val downloadProgress: StateFlow<DownloadProgressState?> = _downloadProgress.asStateFlow()
 
+    // Download Result Dialog State (Transparent & Honest Results with Retry Flow)
+    private val _downloadResultState = MutableStateFlow<com.rustvibe.data.remote.DownloadResultDialogState?>(null)
+    val downloadResultState: StateFlow<com.rustvibe.data.remote.DownloadResultDialogState?> = _downloadResultState.asStateFlow()
+
+    fun dismissDownloadResultDialog() {
+        _downloadResultState.value = null
+    }
+
     // Local Folder Import State
     private val _scannedLocalFolder = MutableStateFlow<ScannedFolderResult?>(null)
     val scannedLocalFolder: StateFlow<ScannedFolderResult?> = _scannedLocalFolder.asStateFlow()
@@ -301,6 +309,9 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
             _detectedPlaylist.value = null
 
             val total = playlistResult.tracks.size
+            var successCount = 0
+            val failedTracks = mutableListOf<SongSearchResult>()
+
             playlistResult.tracks.forEachIndexed { index, song ->
                 val baseFrac = index.toFloat() / total.toFloat()
                 _downloadProgress.value = DownloadProgressState(
@@ -341,21 +352,113 @@ class RustVibeViewModel(application: Application) : AndroidViewModel(application
                     )
                     playlistDao.insertTrack(trackEntity)
                     playlistDao.appendTrackToPlaylist(playlistId, trackEntity.id)
+                    successCount++
                 } catch (e: Exception) {
+                    failedTracks.add(song)
                     Log.e("RustVibeVM", "Batch song download error for ${song.title}", e)
                 }
             }
 
-            _downloadProgress.value = DownloadProgressState(
-                isDownloading = false,
-                title = "Playlist '$finalName' Berhasil!",
-                progress = 1.0f,
-                percent = 100,
-                speedText = "Selesai",
-                statusText = "$total lagu berhasil disimpan ke playlist"
-            )
-            delay(2500)
             _downloadProgress.value = null
+
+            if (failedTracks.isNotEmpty()) {
+                _downloadResultState.value = com.rustvibe.data.remote.DownloadResultDialogState(
+                    playlistId = playlistId,
+                    playlistName = finalName,
+                    successCount = successCount,
+                    failedCount = failedTracks.size,
+                    failedSongs = failedTracks
+                )
+            } else {
+                _downloadProgress.value = DownloadProgressState(
+                    isDownloading = false,
+                    title = "Playlist '$finalName' Tersimpan!",
+                    progress = 1.0f,
+                    percent = 100,
+                    speedText = "Selesai",
+                    statusText = "Semua $successCount lagu berhasil disimpan ke playlist"
+                )
+                delay(2500)
+                _downloadProgress.value = null
+            }
+        }
+    }
+
+    fun retryFailedDownloads(state: com.rustvibe.data.remote.DownloadResultDialogState) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _downloadResultState.value = null
+            val total = state.failedSongs.size
+            var newlySucceeded = 0
+            val stillFailed = mutableListOf<SongSearchResult>()
+
+            state.failedSongs.forEachIndexed { index, song ->
+                val baseFrac = index.toFloat() / total.toFloat()
+                _downloadProgress.value = DownloadProgressState(
+                    isDownloading = true,
+                    trackId = song.id,
+                    title = song.title,
+                    progress = baseFrac,
+                    percent = (baseFrac * 100).toInt(),
+                    speedText = "Mencoba Ulang ${index + 1}/$total",
+                    statusText = "Menyimpan ke playlist '${state.playlistName}'"
+                )
+
+                try {
+                    val pkg = YtDlpStandaloneManager.downloadDualPackage(getApplication(), song) { frac, status ->
+                        val subFrac = (index.toFloat() + frac) / total.toFloat()
+                        _downloadProgress.value = DownloadProgressState(
+                            isDownloading = true,
+                            trackId = song.id,
+                            title = song.title,
+                            progress = subFrac,
+                            percent = (subFrac * 100).toInt(),
+                            speedText = status,
+                            statusText = "Mencoba Ulang ${index + 1}/$total"
+                        )
+                    }
+
+                    val trackEntity = TrackEntity(
+                        id = pkg.trackId,
+                        title = pkg.title,
+                        producer = pkg.producer,
+                        durationSeconds = pkg.durationSeconds,
+                        thumbnailPath = pkg.thumbnailFile.absolutePath,
+                        m4aFilePath = pkg.m4aFile.absolutePath,
+                        backupMp3FilePath = pkg.backupMp3File?.absolutePath,
+                        lyricsFilePath = pkg.lyricsFile?.absolutePath,
+                        hasSyncedLyrics = pkg.hasSyncedLyrics,
+                        isEphemeral = false
+                    )
+                    playlistDao.insertTrack(trackEntity)
+                    playlistDao.appendTrackToPlaylist(state.playlistId, trackEntity.id)
+                    newlySucceeded++
+                } catch (e: Exception) {
+                    stillFailed.add(song)
+                    Log.e("RustVibeVM", "Retry failed for ${song.title}", e)
+                }
+            }
+
+            _downloadProgress.value = null
+            val updatedSuccessCount = state.successCount + newlySucceeded
+
+            if (stillFailed.isNotEmpty()) {
+                _downloadResultState.value = state.copy(
+                    successCount = updatedSuccessCount,
+                    failedCount = stillFailed.size,
+                    failedSongs = stillFailed
+                )
+            } else {
+                _downloadProgress.value = DownloadProgressState(
+                    isDownloading = false,
+                    title = "Playlist '${state.playlistName}' Lengkap!",
+                    progress = 1.0f,
+                    percent = 100,
+                    speedText = "Selesai",
+                    statusText = "Semua $updatedSuccessCount lagu sekarang tersimpan di playlist"
+                )
+                delay(2500)
+                _downloadProgress.value = null
+            }
         }
     }
 

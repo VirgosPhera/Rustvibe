@@ -53,6 +53,7 @@ import com.rustvibe.ui.components.ExpressiveFloatingPlayer
 import com.rustvibe.ui.components.ExpressiveIcons
 import com.rustvibe.ui.components.ExpressiveNavigationRail
 import com.rustvibe.ui.components.LocalFolderImportDialog
+import com.rustvibe.ui.components.DownloadResultDialog
 import com.rustvibe.ui.components.NavTab
 import com.rustvibe.ui.components.PlaylistCoverCard
 import com.rustvibe.ui.components.PlaylistDownloadDialog
@@ -84,6 +85,7 @@ fun SearchScreen(
     val onlinePlaylists by viewModel.onlinePlaylists.collectAsState()
     val downloadProgress by viewModel.downloadProgress.collectAsState()
     val scannedFolder by viewModel.scannedLocalFolder.collectAsState()
+    val downloadResultState by viewModel.downloadResultState.collectAsState()
 
     val matchingPlaylists = if (searchQuery.isBlank()) playlists else playlists.filter { it.name.contains(searchQuery, ignoreCase = true) }
 
@@ -583,6 +585,23 @@ fun SearchScreen(
             scannedFolder = folder,
             onConfirm = { name -> viewModel.confirmImportLocalFolder(folder, name) },
             onDismiss = { viewModel.dismissLocalFolderDialog() }
+        )
+    }
+
+    // Modal Dialog: Honest Download Result & Retry
+    downloadResultState?.let { resState ->
+        DownloadResultDialog(
+            state = resState,
+            onRetry = {
+                viewModel.retryFailedDownloads(resState)
+            },
+            onOpenPlaylist = { plId ->
+                viewModel.dismissDownloadResultDialog()
+                onNavigateToPlaylistDetail(plId)
+            },
+            onDismiss = {
+                viewModel.dismissDownloadResultDialog()
+            }
         )
     }
 
