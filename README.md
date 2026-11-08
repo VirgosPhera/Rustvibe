@@ -26,6 +26,11 @@ Pemutar musik mandiri Android (open-source & bebas iklan) yang menggabungkan mes
 
 ## 🇮🇩 Bahasa Indonesia
 
+### Kenapa RustVibe Ada
+Alasan aku bikin aplikasi ini karena aku sering banget denger lagu buat olahraga, tapi pengen tampil beda sama aplikasinya. Jadi kalau temenku bilang, "Lu pake aplikasi musik apa?", dengan pedenya gua bilang, "Ini punya gua sendiri."
+
+---
+
 ### Kenapa RustVibe?
 Kebanyakan aplikasi pemutar musik pihak ketiga di Android cuma pembungkus webview atau pakai MediaPlayer bawaan yang lambat. RustVibe dibangun dengan arsitektur berbeda:
 1. **Core Audio Engine ditulis pakai Rust**: Menggunakan crate `symphonia` untuk decoding M4A (AAC) dan MP3 langsung di layer native tanpa terkena jeda Garbage Collector Java/Kotlin.
